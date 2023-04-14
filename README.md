@@ -1,2 +1,3 @@
-# companyplus-py
-Python FastAPI Company+ API
+# Company +
+
+🙌 Python FastAPI Company+ API 🙌

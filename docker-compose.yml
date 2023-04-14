@@ -1,0 +1,14 @@
+# for local development
+version: '3.7'
+services:
+  back-end:
+    build:
+      context: .
+    ports:
+      - 8080:80
+    volumes:
+      - './app/:/app'
+    environment:
+      - LOG_LEVEL=info
+      - RELOAD=true # when in use with ghcr.io/multi-py/python-uvicorn image
+    # command: /bin/sh -c "/start-reload.sh" # For production, this line should be removed (no need for hot reload)
