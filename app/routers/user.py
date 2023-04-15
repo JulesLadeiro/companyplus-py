@@ -2,8 +2,12 @@
 import hashlib
 from fastapi import APIRouter, status, HTTPException, Response
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from fastapi import Depends
 # Local Imports
-from models.user import User, UserOptionnalFields
+from templates.user import User, UserOptionnalFields
+import models
+from dependencies import get_db
 
 router = APIRouter()
 
@@ -15,13 +19,13 @@ def hash_password(password: str):
 
 
 @router.get("/users")
-def getUser() -> list[User]:
+def getUser(db: Session = Depends(get_db)) -> list[User]:
     """
     Récupérer tout les utilisateurs
     """
-    if len(users) == 0:
-        return Response(status_code=204)
-    return users
+    db_users = db.query(models.User).all()
+    print("db_users: ", db_users)
+    return db_users
 
 
 @router.get("/users/search")

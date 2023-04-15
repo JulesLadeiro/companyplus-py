@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException, status, APIRouter
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from jose import jwt, JWTError
-from models.user import User
+from templates.user import User
 import hashlib
 # Local Imports
 from routers.user import users
