@@ -24,8 +24,8 @@ def getUser(db: Session = Depends(get_db)) -> list[User]:
     Récupérer tout les utilisateurs
     """
     db_users = db.query(models.User).all()
-    print("db_users: ", db_users)
-    return db_users
+    db_users_dict = [user.__dict__ for user in db_users]
+    return db_users_dict
 
 
 @router.get("/users/search")
