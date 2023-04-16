@@ -1,14 +1,16 @@
 # System Imports
-from typing import Annotated
-# Libs Imports
-from fastapi import Depends, FastAPI, HTTPException, status, APIRouter
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
-from jose import jwt, JWTError
-from models.user import User
 import hashlib
+from typing import Annotated
+from dependencies import get_db
+# Libs Imports
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from models.user import User
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 # Local Imports
-from routers.user import users
+from entities import User as UserEntity
 
 router = APIRouter()
 
@@ -35,21 +37,21 @@ async def decode_token(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
 
 
 @router.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     hashed_password = hash_password(form_data.password)
-    for user in users:
-        if user["name"].lower() == form_data.username.lower():
-            if hashed_password == user["password_hash"]:
-                data = dict()
-                data["id"] = user["id"]
-                data["name"] = user["name"]
-                return {
-                    "access_token": jwt.encode(data, JWT_KEY, algorithm="HS256"),
-                    "token_type": "bearer"
-                }
-            break
+    user = db.query(UserEntity).filter_by(email=form_data.username.lower()).first()
+    if user != None:
+        user = user.__dict__
+        if user["email"].lower() == form_data.username.lower() and hashed_password == user["password"]:
+            data = dict() 
+            data["id"] = user["id"]
+            return {
+                "access_token": jwt.encode(data, JWT_KEY, algorithm="HS256"),
+                "token_type": "bearer"
+            }
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Incorrect username or password")
+                        detail="Incorrect email or password")
+
 
 
 @router.get("/items/")
