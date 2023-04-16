@@ -6,8 +6,9 @@ from pydantic import BaseModel
 
 # declare role enum
 class UserRole(str, Enum):
-    admin = "admin"
-    client = "client"
+    user = "USER"
+    admin = "ADMIN"
+    maintainer = "MAINTAINER"
 
 
 class User(BaseModel):
@@ -16,8 +17,7 @@ class User(BaseModel):
     last_name: str
     email: str
     password: str
-    role: str
-
+    role: UserRole
 
 
 class UserOptionnalFields(BaseModel):

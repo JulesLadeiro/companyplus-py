@@ -14,9 +14,13 @@ app = FastAPI()
 
 
 custom_responses = {
-    404: {"description": "Not found"},
+    200: {"description": "OK"},
+    201: {"description": "Created"},
+    204: {"description": "No content"},
     400: {"description": "Bad request"},
-    204: {"description": "No content"}
+    401: {"description": "Unauthorized"},
+    403: {"description": "Forbidden"},
+    404: {"description": "Not found"},
 }
 
 app.include_router(user.router, tags=["users"], responses=custom_responses)

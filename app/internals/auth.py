@@ -23,7 +23,7 @@ def hash_password(password: str):
     return hashlib.sha256(f'{password}'.encode('utf-8')).hexdigest()
 
 
-async def decode_token(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
+async def decode_token(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -31,9 +31,13 @@ async def decode_token(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
     )
     try:
         decoded = jwt.decode(token, JWT_KEY, algorithms=["HS256"])
+        # get user from db with decoded["id"]
+        user = db.query(UserEntity).filter_by(id=decoded["id"]).first().__dict__
+        if user == None:
+            raise credentials_exception
     except JWTError:
         return credentials_exception
-    return decoded
+    return user
 
 
 @router.post("/login")
