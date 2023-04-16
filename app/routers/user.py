@@ -5,8 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from fastapi import Depends
 # Local Imports
-from templates.user import User, UserOptionnalFields
-import models
+from models.user import User, UserOptionnalFields
+from entities import User as UserEntity
 from dependencies import get_db
 
 router = APIRouter()
@@ -23,7 +23,7 @@ def getUser(db: Session = Depends(get_db)) -> list[User]:
     """
     Récupérer tout les utilisateurs
     """
-    db_users = db.query(models.User).all()
+    db_users = db.query(UserEntity).all()
     db_users_dict = [user.__dict__ for user in db_users]
     return db_users_dict
 

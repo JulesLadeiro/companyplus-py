@@ -5,7 +5,7 @@ from fastapi import FastAPI, status
 from routers import user
 from internals import auth
 from database import engine
-from models import Base
+from entities import Base
 
 Base.metadata.create_all(bind=engine)
 
