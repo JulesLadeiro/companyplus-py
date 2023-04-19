@@ -20,7 +20,7 @@ class User(BaseModel):
     role: UserRole
 
 
-class UserOptionnalFields(BaseModel):
+class UserChangeableFields(BaseModel):
     first_name: str = None
     last_name: str = None
     email: str = None

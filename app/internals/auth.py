@@ -55,9 +55,3 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             }
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Incorrect email or password")
-
-
-
-@router.get("/items/")
-async def read_items(user: Annotated[User, Depends(decode_token)]):
-    return {"user": user}
