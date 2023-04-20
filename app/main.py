@@ -4,7 +4,7 @@ from fastapi import FastAPI, status
 # Local imports
 from routers import user
 from internals import auth
-from database import engine
+from db.database import engine
 from entities import Base
 
 Base.metadata.create_all(bind=engine)
