@@ -63,18 +63,18 @@ Know that fields with a ? at the end are optional. And fields with a ! at the en
 
 | character | meaning                     |
 | --------- | --------------------------- |
-| ?         | optional                    |
 | *         | auto-generated              |
-| !         | any value / encrypted field |
 | #         | hashed field                |
+| ?         | optional                    |
+| !         | any value / encrypted field |
 
 ### Users table
 
-| id* | first_name! | last_name! | email!         | password# | role       |
+| id* | first_name! | last_name! | email!         | password#  | role       |
 | --- | ----------- | ---------- | -------------- | ---------- | ---------- |
-| 3   | !           | !          | admin@cp.cp    | admin      | MAINTAINER |
-| 1   | !           | !          | jules@jules.ju | azerty     | ADMIN      |
-| 2   | !           | !          | yan@yan.yan    | azertyuiop | USER       |
+| 1   | !           | !          | admin@cp.cp    | admin      | MAINTAINER |
+| 2   | !           | !          | jules@jules.ju | azerty     | ADMIN      |
+| 3   | !           | !          | yan@yan.yan    | azertyuiop | USER       |
 
 ### Companies table
 
@@ -83,10 +83,15 @@ Know that fields with a ? at the end are optional. And fields with a ! at the en
 
 ### Plannings table
 
-| id* | name! | company_id! |
-| --- | ----- | ----------- |
+| id* | name! | company_id |
+| --- | ----- | ---------- |
 
 ### Events table
 
-| id* | name! | start_date! | end_date! | planning_id! | member_ids |
-| --- | ----- | ----------- | --------- | ------------ | ---------- |
+| id* | name! | place! | start_date | end_date | planning_id | member_ids |
+| --- | ----- | ------ | ---------- | -------- | ----------- | ---------- |
+
+### Notifcations table
+
+| id* | content! | user_id | is_read | read_at |
+| --- | -------- | ------- | ------- | ------- |

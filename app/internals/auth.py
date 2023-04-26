@@ -53,7 +53,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             id=userFound["id"],
             password=userFound["password"]
         ).__dict__
-        print(userFound["password"], hashed_password)
         if hashed_password == userFound["password"]:
             data = dict()
             data["id"] = userFound["id"]

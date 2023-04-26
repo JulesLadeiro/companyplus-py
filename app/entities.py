@@ -3,7 +3,7 @@ import datetime
 # Libs imports
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.types import DateTime
-# from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship
 
 from db.database import Base
 
@@ -19,7 +19,10 @@ class User(Base):
     role = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
-    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    company = relationship("Company", back_populates="users")
+    events = relationship("Event", back_populates="users")
+    notifications = relationship("Notification", back_populates="users")
 
 
 class Company(Base):
@@ -33,7 +36,8 @@ class Company(Base):
     country = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
-    # users = relationship("User", back_populates="company")
+    users = relationship("User", back_populates="company")
+    plannings = relationship("Planning", back_populates="company")
 
 
 class Planning(Base):
@@ -44,8 +48,9 @@ class Planning(Base):
     company_id = Column(Integer, ForeignKey("companies.id"))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
-    # company = relationship("Company", back_populates="plannings")
-    # users = relationship("User", back_populates="planning")
+    company_id = Column(Integer, ForeignKey("companies.id"))
+    company = relationship("Company", back_populates="plannings")
+    events = relationship("Event", back_populates="planning")
 
 
 class Event(Base):
@@ -53,10 +58,26 @@ class Event(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
+    place = Column(String)
     start_date = Column(DateTime, default=datetime.datetime.utcnow)
     end_date = Column(DateTime, default=datetime.datetime.utcnow)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
     planning_id = Column(Integer, ForeignKey("plannings.id"))
-    # planning = relationship("Planning", back_populates="events")
-    # users = relationship("User", back_populates="events")
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    planning_id = Column(Integer, ForeignKey("plannings.id"))
+    planning = relationship("Planning", back_populates="events")
+    users = relationship("User", back_populates="events")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    content = Column(String)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+    read_at = Column(DateTime, default=datetime.datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    users = relationship("User", back_populates="notifications")
