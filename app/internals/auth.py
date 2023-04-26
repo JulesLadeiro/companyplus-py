@@ -28,9 +28,8 @@ async def decode_token(token: Annotated[str, Depends(oauth2_scheme)], db: Sessio
     )
     try:
         decoded = jwt.decode(token, JWT_KEY, algorithms=["HS256"])
-        # get user from db with decoded["id"]
-        user = db.query(UserEntity).filter_by(
-            id=decoded["id"]).first().__dict__
+        user = decrypt(db.query(UserEntity).filter_by(
+            id=decoded["id"]).first()).__dict__
         if user == None:
             raise credentials_exception
     except JWTError:
@@ -41,13 +40,23 @@ async def decode_token(token: Annotated[str, Depends(oauth2_scheme)], db: Sessio
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     hashed_password = hash_password(form_data.password)
-    user = db.query(UserEntity).filter_by(
-        email=form_data.username.lower()).first()
-    if user != None:
-        user = user.__dict__
-        if user["email"].lower() == form_data.username.lower() and hashed_password == user["password"]:
+    users = [user.__dict__ for user in db.query(UserEntity).all()]
+    userFound = False
+    
+    for user in users:
+        if decrypt(user["email"]) == form_data.username:
+            userFound = user
+            break
+
+    if userFound != False:
+        userFound = UserEntity(
+            id=userFound["id"],
+            password=userFound["password"]
+        ).__dict__
+        print(userFound["password"], hashed_password)
+        if hashed_password == userFound["password"]:
             data = dict()
-            data["id"] = user["id"]
+            data["id"] = userFound["id"]
             return {
                 "access_token": jwt.encode(data, JWT_KEY, algorithm="HS256"),
                 "token_type": "bearer"

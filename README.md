@@ -70,7 +70,7 @@ Know that fields with a ? at the end are optional. And fields with a ! at the en
 
 ### Users table
 
-| id* | first_name! | last_name! | email!         | password!# | role       |
+| id* | first_name! | last_name! | email!         | password# | role       |
 | --- | ----------- | ---------- | -------------- | ---------- | ---------- |
 | 3   | !           | !          | admin@cp.cp    | admin      | MAINTAINER |
 | 1   | !           | !          | jules@jules.ju | azerty     | ADMIN      |

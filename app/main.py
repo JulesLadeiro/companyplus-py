@@ -1,6 +1,6 @@
 # System imports
 # Libs imports
-from fastapi import FastAPI, status
+from fastapi import FastAPI
 # Local imports
 from routers import user
 from internals import auth

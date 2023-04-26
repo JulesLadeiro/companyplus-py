@@ -1,7 +1,7 @@
 # System Imports
 from typing import Annotated
 # Libs Imports
-from fastapi import APIRouter, status, HTTPException, Response
+from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from fastapi import Depends
@@ -59,14 +59,14 @@ async def getUserById(id: int, db: Session = Depends(get_db), authUser: Annotate
 
 
 @router.post("/users", status_code=status.HTTP_201_CREATED)
-async def createUser(user: UserChangeableFields, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
+async def createUser(user: UserChangeableFields, db: Session = Depends(get_db)) -> User:
     """
     Créer un utilisateur
     Role: USER, ADMIN ou MAINTAINER
     """
-    if (authUser["role"] != "MAINTAINER"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    # if (authUser["role"] != "MAINTAINER"):
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
     isAlreadyRegistered = db.query(UserEntity).filter_by(
         email=encrypt(user.email)).first()
@@ -78,7 +78,7 @@ async def createUser(user: UserChangeableFields, db: Session = Depends(get_db), 
         first_name=encrypt(user.first_name),
         last_name=encrypt(user.last_name),
         email=encrypt(user.email),
-        password=hash_password(encrypt(user.password)),
+        password=hash_password(user.password),
         role=user.role
     )
     db.add(db_user)
@@ -113,40 +113,32 @@ async def deleteUserById(userId: int, db: Session = Depends(get_db), authUser: A
     return old_user.__dict__
 
 
-# @router.put("/users/{userId}")
-# async def updateUserById(userId: int, user: User) -> User:
-#     """
-#     Mettre à jour un utilisateur par son id
-#     """
-#     oldUser = list(filter(lambda x: x["id"] == userId, users))
-#     users.remove(oldUser[0])
-#     users.append(user.__dict__)
-#     return user
+@router.patch("/users/{userId}")
+async def updateUserById(userId: int, user: UserChangeableFields, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
+    """
+    Mettre à jour un utilisateur par son id
+    """
+    oldUser = db.query(UserEntity).filter_by(id=userId).first()
+    if oldUser == None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="User not found")
 
+    users.remove(oldUser[0])
 
-# @router.patch("/users/{userId}")
-# async def updateUserById(userId: int, user: UserChangeableFields) -> User:
-#     """
-#     Mettre à jour un utilisateur par son id
-#     """
-#     oldUser = list(filter(lambda x: x["id"] == userId, users))
+    if user.name is not None:
+        oldUser[0]["name"] = user.name
+    if user.surname is not None:
+        oldUser[0]["surname"] = user.surname
+    if user.email is not None:
+        oldUser[0]["email"] = user.email
+    if user.password_hash is not None:
+        oldUser[0]["password_hash"] = hash_password(user.password_hash)
+    if user.tel is not None:
+        oldUser[0]["tel"] = user.tel
+    if user.newsletter is not None:
+        oldUser[0]["newsletter"] = user.newsletter
+    if user.is_client is not None:
+        oldUser[0]["is_client"] = user.is_client
 
-#     users.remove(oldUser[0])
-
-#     if user.name is not None:
-#         oldUser[0]["name"] = user.name
-#     if user.surname is not None:
-#         oldUser[0]["surname"] = user.surname
-#     if user.email is not None:
-#         oldUser[0]["email"] = user.email
-#     if user.password_hash is not None:
-#         oldUser[0]["password_hash"] = hash_password(user.password_hash)
-#     if user.tel is not None:
-#         oldUser[0]["tel"] = user.tel
-#     if user.newsletter is not None:
-#         oldUser[0]["newsletter"] = user.newsletter
-#     if user.is_client is not None:
-#         oldUser[0]["is_client"] = user.is_client
-
-#     users.append(oldUser[0].__dict__)
-#     return oldUser[0]
+    users.append(oldUser[0].__dict__)
+    return oldUser[0]
