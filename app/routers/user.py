@@ -1,7 +1,6 @@
 # System Imports
 from typing import Annotated
 # Libs Imports
-import hashlib
 from fastapi import APIRouter, status, HTTPException, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -11,14 +10,11 @@ from models.user import User, UserChangeableFields
 from entities import User as UserEntity
 from dependencies import get_db
 from internals.auth import decode_token
+from crypt import encrypt, decrypt, hash_password
 
 router = APIRouter()
 
 users = []
-
-
-def hash_password(password: str):
-    return hashlib.sha256(f'{password}'.encode('utf-8')).hexdigest()
 
 
 @router.get("/users")
@@ -30,25 +26,36 @@ async def getUsers(db: Session = Depends(get_db), authUser: Annotated[User, Depe
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     db_users = db.query(UserEntity).all()
+    # for user in db_users set to dict and decrypt values
     db_users_dict = [user.__dict__ for user in db_users]
+    for user in db_users_dict:
+        user["first_name"] = decrypt(user["first_name"])
+        user["last_name"] = decrypt(user["last_name"])
+        user["email"] = decrypt(user["email"])
     # TODO if role is admin, send only users in its company
     return db_users_dict
 
 
 @router.get("/users/search")
-async def getUserByUserName(id: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> list[User]:
+async def getUserById(id: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
     """
     Récupérer un utilisateur par son id
     """
-    if (authUser["role"] != "ADMIN"):
+    if (authUser["role"] != "MAINTAINER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     db_user = db.query(UserEntity).filter_by(id=id).first()
     if db_user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="User not found")
-    # TODO if role is admin, send only users in its company
-    return db_user.__dict__
+    db_user_decrypted = dict(
+        id=db_user.id,
+        first_name=decrypt(db_user.first_name),
+        last_name=decrypt(db_user.last_name),
+        email=decrypt(db_user.email),
+        role=db_user.role
+    )
+    return db_user_decrypted
 
 
 @router.post("/users", status_code=status.HTTP_201_CREATED)
@@ -60,17 +67,31 @@ async def createUser(user: UserChangeableFields, db: Session = Depends(get_db), 
     if (authUser["role"] != "MAINTAINER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
+    isAlreadyRegistered = db.query(UserEntity).filter_by(
+        email=encrypt(user.email)).first()
+    if isAlreadyRegistered:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="User already exists")
+
     db_user = UserEntity(
-        first_name=user.first_name,
-        last_name=user.last_name,
-        email=user.email,
-        password=hash_password(user.password),
+        first_name=encrypt(user.first_name),
+        last_name=encrypt(user.last_name),
+        email=encrypt(user.email),
+        password=hash_password(encrypt(user.password)),
         role=user.role
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return db_user.__dict__
+    db_user_decrypted = dict(
+        id=db_user.id,
+        first_name=decrypt(db_user.first_name),
+        last_name=decrypt(db_user.last_name),
+        email=decrypt(db_user.email),
+        role=db_user.role
+    )
+    return db_user_decrypted
 
 
 @router.delete("/users/{userId}")

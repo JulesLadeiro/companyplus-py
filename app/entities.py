@@ -15,6 +15,7 @@ class User(Base):
     password = Column(String)
     role = Column(String)
 
+
 class Company(Base):
     __tablename__ = "companies"
 
@@ -24,7 +25,8 @@ class Company(Base):
     website = Column(String)
     city = Column(String)
     country = Column(String)
-    users = relationship("User", back_populates="company")
+    # users = relationship("User", back_populates="company")
+
 
 class Planning(Base):
     __tablename__ = "plannings"
@@ -32,8 +34,9 @@ class Planning(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
     company_id = Column(Integer, ForeignKey("companies.id"))
-    company = relationship("Company", back_populates="plannings")
-    users = relationship("User", back_populates="planning")
+    # company = relationship("Company", back_populates="plannings")
+    # users = relationship("User", back_populates="planning")
+
 
 class Event(Base):
     __tablename__ = "events"
@@ -43,5 +46,5 @@ class Event(Base):
     start_date = Column(String)
     end_date = Column(String)
     planning_id = Column(Integer, ForeignKey("plannings.id"))
-    planning = relationship("Planning", back_populates="events")
-    users = relationship("User", back_populates="events")
+    # planning = relationship("Planning", back_populates="events")
+    # users = relationship("User", back_populates="events")

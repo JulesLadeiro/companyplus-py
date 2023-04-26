@@ -38,6 +38,8 @@ Don't forget to authenticate yourself to use the API, only the /login route is p
 
 Please note that when you will authenticate yourself, you will have to enter your email in the `username` field and your password in the `password` field.
 
+Know that your password is encrypted AND after that, hashed! __Si t'as le hash, t'as pas le mot de passe!__
+
 ## Database information
 
 ### By default
@@ -68,11 +70,11 @@ Know that fields with a ? at the end are optional. And fields with a ! at the en
 
 ### Users table
 
-| id* | first_name! | last_name! | email!               | password#  | role       |
-| --- | ----------- | ---------- | -------------------- | ---------- | ---------- |
-| 3   | !           | !          | admin@companyplus.cp | admin      | MAINTAINER |
-| 1   | !           | !          | jules@jules.ju       | azerty     | ADMIN      |
-| 2   | !           | !          | yan@yan.yan          | azertyuiop | USER       |
+| id* | first_name! | last_name! | email!         | password!# | role       |
+| --- | ----------- | ---------- | -------------- | ---------- | ---------- |
+| 3   | !           | !          | admin@cp.cp    | admin      | MAINTAINER |
+| 1   | !           | !          | jules@jules.ju | azerty     | ADMIN      |
+| 2   | !           | !          | yan@yan.yan    | azertyuiop | USER       |
 
 ### Companies table
 
