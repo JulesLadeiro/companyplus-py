@@ -28,8 +28,11 @@ async def decode_token(token: Annotated[str, Depends(oauth2_scheme)], db: Sessio
     )
     try:
         decoded = jwt.decode(token, JWT_KEY, algorithms=["HS256"])
-        user = decrypt(db.query(UserEntity).filter_by(
-            id=decoded["id"]).first()).__dict__
+        user = db.query(UserEntity).filter_by(
+            id=decoded["id"]).first().__dict__
+        user["first_name"] = decrypt(user["first_name"])
+        user["last_name"] = decrypt(user["last_name"])
+        user["email"] = decrypt(user["email"])
         if user == None:
             raise credentials_exception
     except JWTError:

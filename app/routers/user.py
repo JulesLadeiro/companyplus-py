@@ -1,5 +1,6 @@
 # System Imports
 from typing import Annotated
+import datetime
 # Libs Imports
 from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel
@@ -14,11 +15,9 @@ from crypt import encrypt, decrypt, hash_password
 
 router = APIRouter()
 
-users = []
-
 
 @router.get("/users")
-async def getUsers(db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> list[User]:
+async def get_users(db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> list[User]:
     """
     Récupérer tout les utilisateurs
     """
@@ -26,28 +25,38 @@ async def getUsers(db: Session = Depends(get_db), authUser: Annotated[User, Depe
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     db_users = db.query(UserEntity).all()
-    # for user in db_users set to dict and decrypt values
+
     db_users_dict = [user.__dict__ for user in db_users]
     for user in db_users_dict:
         user["first_name"] = decrypt(user["first_name"])
         user["last_name"] = decrypt(user["last_name"])
         user["email"] = decrypt(user["email"])
-    # TODO if role is admin, send only users in its company
+        user["created_at"] = user["created_at"].strftime("%Y-%m-%d %H:%M:%S")
+        user["updated_at"] = user["updated_at"].strftime("%Y-%m-%d %H:%M:%S")
+
+    admin_company_id = authUser["company_id"]
+    if (authUser["role"] == "ADMIN"):
+        db_users_dict = list(
+            filter(lambda user: user["company_id"] == admin_company_id, db_users_dict))
+
     return db_users_dict
 
 
 @router.get("/users/search")
-async def getUserById(id: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
+async def get_user_by_id(id: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
     """
     Récupérer un utilisateur par son id
     """
     if (authUser["role"] != "MAINTAINER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
     db_user = db.query(UserEntity).filter_by(id=id).first()
+
     if db_user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="User not found")
+
     db_user_decrypted = dict(
         id=db_user.id,
         first_name=decrypt(db_user.first_name),
@@ -55,18 +64,19 @@ async def getUserById(id: int, db: Session = Depends(get_db), authUser: Annotate
         email=decrypt(db_user.email),
         role=db_user.role
     )
+
     return db_user_decrypted
 
 
 @router.post("/users", status_code=status.HTTP_201_CREATED)
-async def createUser(user: UserChangeableFields, db: Session = Depends(get_db)) -> User:
+async def create_user(user: UserChangeableFields, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
     """
     Créer un utilisateur
     Role: USER, ADMIN ou MAINTAINER
     """
-    # if (authUser["role"] != "MAINTAINER"):
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    if (authUser["role"] != "MAINTAINER"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
     isAlreadyRegistered = db.query(UserEntity).filter_by(
         email=encrypt(user.email)).first()
@@ -81,9 +91,11 @@ async def createUser(user: UserChangeableFields, db: Session = Depends(get_db)) 
         password=hash_password(user.password),
         role=user.role
     )
+
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+
     db_user_decrypted = dict(
         id=db_user.id,
         first_name=decrypt(db_user.first_name),
@@ -91,19 +103,22 @@ async def createUser(user: UserChangeableFields, db: Session = Depends(get_db)) 
         email=decrypt(db_user.email),
         role=db_user.role
     )
+
     return db_user_decrypted
 
 
 @router.delete("/users/{userId}")
-async def deleteUserById(userId: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
+async def delete_user_by_id(userId: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
     """
     Supprimer un utilisateur par son id
     """
     if (authUser["role"] != "MAINTAINER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
     old_user = db.query(UserEntity).filter_by(id=userId).first()
     db_user = db.query(UserEntity).filter_by(id=userId).first()
+
     if db_user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="User not found")
@@ -114,31 +129,41 @@ async def deleteUserById(userId: int, db: Session = Depends(get_db), authUser: A
 
 
 @router.patch("/users/{userId}")
-async def updateUserById(userId: int, user: UserChangeableFields, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
+async def update_user_by_id(userId: int, user: UserChangeableFields, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
     """
     Mettre à jour un utilisateur par son id
     """
-    oldUser = db.query(UserEntity).filter_by(id=userId).first()
-    if oldUser == None:
+    if ((userId == authUser["id"] and user.role is not None and authUser["role"] != "MAINTAINER") or (userId != authUser["id"] and authUser["role"] != "MAINTAINER")):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
+    db_user = db.query(UserEntity).filter_by(id=userId).first()
+
+    if db_user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="User not found")
 
-    users.remove(oldUser[0])
+    db_user.first_name = encrypt(
+        user.first_name) if user.first_name is not None else db_user.first_name
+    db_user.last_name = encrypt(
+        user.last_name) if user.last_name is not None else db_user.last_name
+    db_user.email = encrypt(
+        user.email) if user.email is not None else db_user.email
+    db_user.password = hash_password(
+        user.password) if user.password is not None else db_user.password
+    db_user.role = user.role if user.role is not None else db_user.role
+    db_user.updated_at = datetime.now()
+    db.commit()
+    db.refresh(db_user)
 
-    if user.name is not None:
-        oldUser[0]["name"] = user.name
-    if user.surname is not None:
-        oldUser[0]["surname"] = user.surname
-    if user.email is not None:
-        oldUser[0]["email"] = user.email
-    if user.password_hash is not None:
-        oldUser[0]["password_hash"] = hash_password(user.password_hash)
-    if user.tel is not None:
-        oldUser[0]["tel"] = user.tel
-    if user.newsletter is not None:
-        oldUser[0]["newsletter"] = user.newsletter
-    if user.is_client is not None:
-        oldUser[0]["is_client"] = user.is_client
+    db_user_decrypted = dict(
+        id=db_user.id,
+        first_name=decrypt(db_user.first_name),
+        last_name=decrypt(db_user.last_name),
+        email=decrypt(db_user.email),
+        role=db_user.role,
+        created_at=db_user.created_at,
+        updated_at=db_user.updated_at
+    )
 
-    users.append(oldUser[0].__dict__)
-    return oldUser[0]
+    return db_user_decrypted

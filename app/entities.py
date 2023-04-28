@@ -1,12 +1,17 @@
 # System imports
 import datetime
 # Libs imports
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
 from sqlalchemy.types import DateTime
 from sqlalchemy.orm import relationship
 
 from db.database import Base
 
+
+user_event = Table('user_event', Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id')),
+    Column('event_id', Integer, ForeignKey('events.id'))
+)
 
 class User(Base):
     __tablename__ = "users"
@@ -19,7 +24,7 @@ class User(Base):
     role = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
-    company_id = Column(Integer, ForeignKey("companies.id"))
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     company = relationship("Company", back_populates="users")
     events = relationship("Event", back_populates="users")
     notifications = relationship("Notification", back_populates="users")
@@ -31,7 +36,7 @@ class Company(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
     email = Column(String, index=True)
-    website = Column(String)
+    website = Column(String, nullable=True)
     city = Column(String)
     country = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)

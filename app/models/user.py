@@ -18,6 +18,8 @@ class User(BaseModel):
     email: str
     password: str = None
     role: UserRole
+    created_at: str = None
+    updated_at: str = None
 
 
 class UserChangeableFields(BaseModel):
