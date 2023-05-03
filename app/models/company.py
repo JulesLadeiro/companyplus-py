@@ -7,7 +7,6 @@ from models.user import User
 class Company(BaseModel):
     id: int = None
     name: str
-    email: str
     website: str = None
     city: str
     country: str
@@ -18,7 +17,6 @@ class Company(BaseModel):
 
 class CompanyChangeableFields(BaseModel):
     name: str = None
-    email: str = None
     website: str = None
     city: str = None
     country: str = None

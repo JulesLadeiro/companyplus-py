@@ -82,11 +82,11 @@ Please refer to the following table to understand the meaning of the characters 
 
 #### Companies table
 
-| id  | name!       | email! | website!? | city! | country! | member_ids |
-| --- | ----------- | ------ | --------- | ----- | -------- | ---------- |
-| 1   | companyplus | *      | *         | *     | *        | 2,3,4      |
-| 2   | sportplus   | *      | *         | *     | *        | 5,6        |
-| 2   | twitterplus | *      | *         | *     | *        |            |
+| id  | name!       | website!? | city! | country! | member_ids |
+| --- | ----------- | --------- | ----- | -------- | ---------- |
+| 1   | companyplus | *         | *     | *        | 2,3,4      |
+| 2   | sportplus   | *         | *     | *        | 5,6        |
+| 2   | twitterplus | *         | *     | *        |            |
 
 #### Plannings table
 
@@ -95,8 +95,8 @@ Please refer to the following table to understand the meaning of the characters 
 
 #### Events table
 
-| id  | name! | place! | start_date | end_date | planning_id | member_ids |
-| --- | ----- | ------ | ---------- | -------- | ----------- | ---------- |
+| id  | name! | place! | start_date | end_date | planning_id | member_nb | owner_id |
+| --- | ----- | ------ | ---------- | -------- | ----------- | --------- | -------- |
 
 #### Notifcations table
 

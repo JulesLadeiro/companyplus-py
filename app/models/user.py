@@ -15,7 +15,7 @@ class User(BaseModel):
     id: int = None
     first_name: str
     last_name: str
-    email: str
+    email: str = None
     password: str = None
     role: UserRole
     created_at: str = None

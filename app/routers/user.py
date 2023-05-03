@@ -3,12 +3,11 @@ from typing import Annotated
 import datetime
 # Libs Imports
 from fastapi import APIRouter, status, HTTPException
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from fastapi import Depends
 # Local Imports
-from models.user import User, UserChangeableFields
 from entities import User as UserEntity
+from models.user import User, UserChangeableFields
 from dependencies import get_db
 from internals.auth import decode_token
 from crypt import encrypt, decrypt, hash_password
@@ -21,6 +20,7 @@ async def get_users(db: Session = Depends(get_db), authUser: Annotated[User, Dep
     """
     Récupérer tout les utilisateurs
     """
+    # Users with the role USER can't access this route
     if (authUser["role"] != "ADMIN" and authUser["role"] != "MAINTAINER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
@@ -35,7 +35,11 @@ async def get_users(db: Session = Depends(get_db), authUser: Annotated[User, Dep
         user["updated_at"] = user["updated_at"].strftime("%Y-%m-%d %H:%M:%S")
 
     admin_company_id = authUser["company_id"]
+    # If the user is an ADMIN, we only return the users of his company
     if (authUser["role"] == "ADMIN"):
+        # If the user is not in a company, we return an empty list
+        if (authUser["company_id"] == None):
+            return []
         db_users_dict = list(
             filter(lambda user: user["company_id"] == admin_company_id, db_users_dict))
 
@@ -47,6 +51,7 @@ async def get_user_by_id(id: int, db: Session = Depends(get_db), authUser: Annot
     """
     Récupérer un utilisateur par son id
     """
+    # Users with the role USER and ADMIN can't access this route
     if (authUser["role"] != "MAINTAINER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
@@ -74,13 +79,18 @@ async def create_user(user: UserChangeableFields, db: Session = Depends(get_db),
     Créer un utilisateur
     Role: USER, ADMIN ou MAINTAINER
     """
+    # Users with the role USER and ADMIN can't access this route
     if (authUser["role"] != "MAINTAINER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
-    isAlreadyRegistered = db.query(UserEntity).filter_by(
-        email=encrypt(user.email)).first()
-    if isAlreadyRegistered:
+    allUsers = db.query(UserEntity).all()
+    isExistingCompany = False
+    for db_user in allUsers:
+        if (decrypt(db_user.email) == user.email):
+            isExistingCompany = True
+            break
+    if isExistingCompany:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="User already exists")
 
@@ -112,6 +122,7 @@ async def delete_user_by_id(userId: int, db: Session = Depends(get_db), authUser
     """
     Supprimer un utilisateur par son id
     """
+    # Users with the role USER and ADMIN can't access this route
     if (authUser["role"] != "MAINTAINER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
@@ -133,7 +144,8 @@ async def update_user_by_id(userId: int, user: UserChangeableFields, db: Session
     """
     Mettre à jour un utilisateur par son id
     """
-    if ((userId == authUser["id"] and user.role is not None and authUser["role"] != "MAINTAINER") or (userId != authUser["id"] and authUser["role"] != "MAINTAINER")):
+    # Users with the role USER and ADMIN can't patch other users
+    if (userId != authUser["id"] and authUser["role"] != "MAINTAINER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 

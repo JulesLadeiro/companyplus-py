@@ -19,7 +19,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     first_name = Column(String)
     last_name = Column(String)
-    email = Column(String, unique=True, index=True)
+    email = Column(String, unique=True)
     password = Column(String)
     role = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -34,11 +34,10 @@ class Company(Base):
     __tablename__ = "companies"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    email = Column(String, index=True)
+    name = Column(String, unique=True)
     website = Column(String, nullable=True)
-    city = Column(String)
-    country = Column(String)
+    city = Column(String, nullable=True)
+    country = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
     users = relationship("User", back_populates="company")
