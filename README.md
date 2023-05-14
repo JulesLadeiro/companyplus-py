@@ -32,13 +32,9 @@ uvicorn main:app --reload
 
 <http://localhost:8000/doc> (python installation default port)
 
-## Good to know
-
-- Maintainer can't be in a company, because he is the creator of all companies and can manage them.
-- There isn't any front-end, so feel free to use our Swagger documentation to test the API.
-- Don't forget to authenticate yourself ⤵️ to use the API, only the /login route is public.
-
 ## Authentication
+
+Don't forget to authenticate yourself to use the API, only the /login route is public.
 
 Please note that when you will authenticate yourself, you will have to enter your email in the `username` field and your password in the `password` field.
 
@@ -52,9 +48,11 @@ It is located in the `app/db` folder, and its default name is `companyplus.db`.
 
 ### Tables
 
+![image](public/assets/companyplus-db-schema.png)
+
 - [x] users
 - [x] companies
-- [ ] plannings
+- [x] plannings
 - [ ] events
 - [ ] notifications
 
@@ -71,37 +69,42 @@ Please refer to the following table to understand the meaning of the characters 
 
 #### Users table
 
-| id  | first_name! | last_name! | email!         | password#  | role       |
-| --- | ----------- | ---------- | -------------- | ---------- | ---------- |
-| 1   | *           | *          | admin@cp.cp    | admin      | MAINTAINER |
-| 2   | *           | *          | jules@jules.ju | azerty     | ADMIN      |
-| 3   | *           | *          | yan@yan.yan    | azertyuiop | USER       |
-| 4   | *           | *          | adam@ad.am     | azertyuiop | USER       |
-| 5   | *           | *          | hugo@hu.go     | azertyuiop | ADMIN      |
-| 6   | *           | *          | hakim@hakim.ou | azertyuiop | USER       |
+| id  | first_name! | last_name! | email!         | password#  | role       | company_id |
+| --- | ----------- | ---------- | -------------- | ---------- | ---------- | ---------- |
+| 1   | *           | *          | admin@cp.cp    | admin      | MAINTAINER | 1          |
+| 2   | *           | *          | jules@jules.ju | azerty     | ADMIN      | 1          |
+| 3   | *           | *          | loic@py.py     | azertyuiop | USER       | 1          |
+| 4   | *           | *          | yan@yan.yan    | azertyuiop | ADMIN      | 2          |
+| 5   | *           | *          | adam@ad.am     | azertyuiop | USER       | 2          |
+| 6   | *           | *          | hugo@hu.go     | azertyuiop | USER       | 3          |
+| 7   | *           | *          | hakim@hakim.ou | azertyuiop | ADMIN      | 3          |
 
 #### Companies table
 
 | id  | name!       | website!? | city! | country! | member_ids |
 | --- | ----------- | --------- | ----- | -------- | ---------- |
-| 1   | companyplus | *         | *     | *        | 2,3,4      |
-| 2   | sportplus   | *         | *     | *        | 5,6        |
-| 2   | twitterplus | *         | *     | *        |            |
+| 1   | companyplus | *         | *     | *        | 1,2,3      |
+| 2   | sportplus   | *         | *     | *        | 4,5        |
+| 3   | twitterplus | *         | *     | *        | 6,7        |
 
 #### Plannings table
 
-| id  | name! | company_id |
-| --- | ----- | ---------- |
+| id  | name!        | company_id |
+| --- | ------------ | ---------- |
+| 1   | Dev backend  | 1          |
+| 2   | Dev frontend | 1          |
+| 3   | Dev shop     | 2          |
+| 4   | Marketing    | 3          |
 
 #### Events table
 
 | id  | name! | place! | start_date | end_date | planning_id | member_nb | owner_id |
 | --- | ----- | ------ | ---------- | -------- | ----------- | --------- | -------- |
 
-#### Notifcations table
+#### Notifications table
 
-| id  | content! | user_id | is_read | read_at |
-| --- | -------- | ------- | ------- | ------- |
+| id  | content! | user_id | read_at |
+| --- | -------- | ------- | ------- |
 
 ## Evaluation grid
 
@@ -119,14 +122,14 @@ Please refer to the following table to understand the meaning of the characters 
 - [x] Utilisation de pydantic (5 points)
 - [x] Section d'import bien formaté (system, libs, local), et chemins absolus et non relatifs Requirements.py avec versions fixes (5 points)
 - [x] Définition du type de donnée en retour des fonctions. (5 points)
-- [ ] Bonne utilisation des path & query parameters (10 points)
-- [ ] Retour des bons codes HTTP (10 points)
+- [x] Bonne utilisation des path & query parameters (10 points)
+- [x] Retour des bons codes HTTP (10 points)
 
 ### 3. Implémentation des fonctionnalités demandées (85 points)
 
 - [x] Connexion à la base de données (30 points)
 - [x] Gestion des utilisateurs (15 points)
-- [ ] Gestion des plannings (15 points)
+- [x] Gestion des plannings (15 points)
 - [ ] Gestion des activités (15 points)
 - [x] Gestion des entreprises (10 points)
 

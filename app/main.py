@@ -2,7 +2,7 @@
 # Libs imports
 from fastapi import FastAPI
 # Local imports
-from routers import user, company
+from routers import user, company, planning
 from internals import auth
 from db.database import engine, Base
 
@@ -24,5 +24,6 @@ custom_responses = {
 
 app.include_router(user.router, tags=["users"], responses=custom_responses)
 app.include_router(company.router, tags=["companies"], responses=custom_responses)
+app.include_router(planning.router, tags=["plannings"], responses=custom_responses)
 app.include_router(auth.router, tags=[
                    "authentication"], responses=custom_responses)

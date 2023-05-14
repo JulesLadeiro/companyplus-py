@@ -9,9 +9,11 @@ from db.database import Base
 
 
 user_event = Table('user_event', Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id')),
-    Column('event_id', Integer, ForeignKey('events.id'))
-)
+                   Column('id', Integer, primary_key=True),
+                   Column('user_id', Integer, ForeignKey('users.id')),
+                   Column('event_id', Integer, ForeignKey('events.id'))
+                   )
+
 
 class User(Base):
     __tablename__ = "users"
@@ -48,7 +50,7 @@ class Planning(Base):
     __tablename__ = "plannings"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
+    name = Column(String, unique=True)
     company_id = Column(Integer, ForeignKey("companies.id"))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -79,9 +81,8 @@ class Notification(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     content = Column(String)
-    is_read = Column(Boolean, default=False)
+    read_at = Column(DateTime, default=datetime.datetime.utcnow)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
-    read_at = Column(DateTime, default=datetime.datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"))
     users = relationship("User", back_populates="notifications")

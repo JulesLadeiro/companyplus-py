@@ -52,7 +52,7 @@ async def get_user_by_id(id: int, db: Session = Depends(get_db), authUser: Annot
     Récupérer un utilisateur par son id
     """
     # Users with the role USER and ADMIN can't access this route
-    if (authUser["role"] != "MAINTAINER"):
+    if (authUser and authUser["role"] != "MAINTAINER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 

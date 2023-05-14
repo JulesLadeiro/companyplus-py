@@ -3,12 +3,13 @@ from typing import Annotated
 import datetime
 # Libs Imports
 from fastapi import APIRouter, status, HTTPException
-from sqlalchemy.orm import Session, contains_eager
+from sqlalchemy.orm import Session, contains_eager, joinedload
 from fastapi import Depends
 # Local Imports
-from models.company import Company, CompanyChangeableFields
+from models.company import Company, CompanyChangeableFields, AddToCompany
 from models.user import User
-from entities import Company as CompanyEntity, User as UserEntity
+from routers.user import get_user_by_id
+from entities import Company as CompanyEntity, User as UserEntity, Planning as PlanningEntity
 from dependencies import get_db
 from internals.auth import decode_token
 from crypt import encrypt, decrypt
@@ -56,8 +57,13 @@ async def get_companies(db: Session = Depends(get_db), authUser: Annotated[User,
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
-    db_company = db.query(CompanyEntity).join(UserEntity).options(
-        contains_eager(CompanyEntity.users)).all()
+    db_company = (
+        db.query(CompanyEntity)
+        .outerjoin(UserEntity)
+        .options(joinedload(CompanyEntity.users))
+        .options(joinedload(CompanyEntity.plannings))
+        .all()
+    )
 
     db_company_dict = []
     for company in db_company:
@@ -73,6 +79,7 @@ async def get_companies(db: Session = Depends(get_db), authUser: Annotated[User,
             "%Y-%m-%d %H:%M:%S")
         company_dict["updated_at"] = company_dict["updated_at"].strftime(
             "%Y-%m-%d %H:%M:%S")
+        # add users
         user_list = company_dict["users"]
         company_dict["users"] = []
         for user in user_list:
@@ -89,6 +96,19 @@ async def get_companies(db: Session = Depends(get_db), authUser: Annotated[User,
             user_dict["updated_at"] = user_dict["updated_at"].strftime(
                 "%Y-%m-%d %H:%M:%S")
             company_dict["users"].append(user_dict)
+        # add plannings
+        planning_list = company_dict["plannings"]
+        company_dict["plannings"] = []
+        for planning in planning_list:
+            planning_dict = planning.__dict__
+            planning_dict["id"] = planning_dict["id"]
+            planning_dict["name"] = decrypt(planning_dict["name"])
+            planning_dict["company_id"] = planning_dict["company_id"]
+            planning_dict["created_at"] = planning_dict["created_at"].strftime(
+                "%Y-%m-%d %H:%M:%S")
+            planning_dict["updated_at"] = planning_dict["updated_at"].strftime(
+                "%Y-%m-%d %H:%M:%S")
+            company_dict["plannings"].append(planning_dict)
         db_company_dict.append(company_dict)
 
     return db_company_dict
@@ -145,16 +165,19 @@ async def delete_company_by_id(companyId: int, db: Session = Depends(get_db), au
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
-    old_company = db.query(CompanyEntity).filter_by(id=companyId).first()
+    # TODO get company by id
     db_company = db.query(CompanyEntity).filter_by(id=companyId).first()
 
     if db_company == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="User not found")
+                            detail="Company not found")
+
+    # TODO remove all users from company
+
     db.delete(db_company)
     db.commit()
 
-    return old_company.__dict__
+    return db_company.__dict__
 
 
 @router.patch("/company/{companyId}")
@@ -198,8 +221,8 @@ async def update_company_by_id(companyId: int, company: CompanyChangeableFields,
     return db_company_decrypted
 
 
-@router.post("/company-add-user/{userId}")
-async def add_user_to_company(userId: int, companyId: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> Company:
+@router.post("/company-add-user")
+async def add_user_to_company(info: AddToCompany, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
     """
     Ajouter un utilisateur à une entreprise
     Rôle MAINTAINER requis
@@ -208,8 +231,8 @@ async def add_user_to_company(userId: int, companyId: int, db: Session = Depends
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
-    db_user = db.query(UserEntity).filter_by(id=userId).first()
-    db_company = db.query(CompanyEntity).filter_by(id=companyId).first()
+    db_user = db.query(UserEntity).filter_by(id=info.userId).first()
+    db_company = db.query(CompanyEntity).filter_by(id=info.companyId).first()
 
     if db_user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -217,25 +240,21 @@ async def add_user_to_company(userId: int, companyId: int, db: Session = Depends
     elif db_company == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Company not found")
-    elif db_user.company_id == companyId:
+    elif db_user.company_id == info.companyId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="User already in this company")
-    elif db_user.company_id != None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="User already has a company")
-    elif db_user.role == "MAINTAINER":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="Maintainer user cannot be added to a company")
 
-    db_user.company_id = companyId
+    db_user.company_id = info.companyId
     db.commit()
     db.refresh(db_user)
 
-    return db_user.__dict__
+    db_user = await get_user_by_id(db_user.id, db)
+
+    return db_user
 
 
 @router.delete("/company-remove-user/{userId}")
-async def remove_user_from_company(userId: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> Company:
+async def remove_user_from_company(userId: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> User:
     """
     Supprimer un utilisateur d'une entreprise
     Rôle MAINTAINER requis
@@ -252,12 +271,11 @@ async def remove_user_from_company(userId: int, db: Session = Depends(get_db), a
     elif db_user.company_id == None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="User does not have a company")
-    elif db_user.role == "MAINTAINER":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="Maintainer user cannot be removed from a company")
 
     db_user.company_id = None
     db.commit()
     db.refresh(db_user)
 
-    return db_user.__dict__
+    db_user = await get_user_by_id(db_user.id, db)
+
+    return db_user

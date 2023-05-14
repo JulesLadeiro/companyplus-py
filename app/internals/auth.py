@@ -42,6 +42,9 @@ async def decode_token(token: Annotated[str, Depends(oauth2_scheme)], db: Sessio
 
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """
+    Authentifie l'utilisateur via son email et son mot de passe
+    """
     hashed_password = hash_password(form_data.password)
     users = [user.__dict__ for user in db.query(UserEntity).all()]
     userFound = False
