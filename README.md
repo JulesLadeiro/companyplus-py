@@ -72,7 +72,7 @@ Please refer to the following table to understand the meaning of the characters 
 | id  | first_name! | last_name! | email!         | password#  | role       | company_id |
 | --- | ----------- | ---------- | -------------- | ---------- | ---------- | ---------- |
 | 1   | *           | *          | admin@cp.cp    | admin      | MAINTAINER | 1          |
-| 2   | *           | *          | jules@jules.ju | azerty     | ADMIN      | 1          |
+| 2   | *           | *          | jules@ju.ju    | azerty     | ADMIN      | 1          |
 | 3   | *           | *          | loic@py.py     | azertyuiop | USER       | 1          |
 | 4   | *           | *          | yan@yan.yan    | azertyuiop | ADMIN      | 2          |
 | 5   | *           | *          | adam@ad.am     | azertyuiop | USER       | 2          |
@@ -98,8 +98,13 @@ Please refer to the following table to understand the meaning of the characters 
 
 #### Events table
 
-| id  | name! | place! | start_date | end_date | planning_id | member_nb | owner_id |
-| --- | ----- | ------ | ---------- | -------- | ----------- | --------- | -------- |
+| id  | name!                       | place!      | start_date | end_date | planning_id | members_nb | owner_id | invited_at | updated_at |
+| --- | --------------------------- | ----------- | ---------- | -------- | ----------- | ---------- | -------- | ---------- | ---------- |
+| 1   | endpoints events            | teleworking | *          | *        | 1           | *          | 2        | *          | *          |
+| 2   | endpoints notifications     | efficom     | *          | *        | 1           | *          | 3        | *          | *          |
+| 3   | ux ui meet                  | teleworking | *          | *        | 2           | *          | 1        | *          | *          |
+| 4   | price discussion            | teleworking | *          | *        | 3           | *          | 5        | *          | *          |
+| 5   | twitter plus public release | teleworking | *          | *        | 4           | *          | 7        | *          | *          |
 
 #### Notifications table
 

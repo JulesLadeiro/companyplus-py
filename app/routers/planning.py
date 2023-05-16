@@ -21,7 +21,18 @@ async def get_plannings(db: Session = Depends(get_db), authUser: Annotated[User,
     """
     Récupère tout les plannings de l'entreprise de l'utilisateur connecté
     """
-    pass
+    db_plannings = db.query(PlanningEntity).filter_by(
+        company_id=authUser["company_id"]).all()
+    db_plannings_dict = [planning.__dict__ for planning in db_plannings]
+
+    for planning in db_plannings_dict:
+        planning["name"] = decrypt(planning["name"])
+        planning["created_at"] = datetime.datetime.timestamp(
+            planning["created_at"])
+        planning["updated_at"] = datetime.datetime.timestamp(
+            planning["updated_at"])
+
+    return db_plannings_dict
 
 
 @router.post("/planning", status_code=status.HTTP_201_CREATED)
@@ -76,22 +87,25 @@ async def create_planning(planning: PlanningChangeableFields, db: Session = Depe
 async def delete_planning_by_id(planningId: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> Planning:
     """
     Supprimer un planning via son id
-    Les MAINTAINER doivent remplir company_id
     """
-    if (authUser["role"] != "MAINTAINER"):
+    if (authUser["role"] == "USER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
-    old_company = db.query(PlanningEntity).filter_by(id=planningId).first()
-    db_company = db.query(PlanningEntity).filter_by(id=planningId).first()
+    old_planning = db.query(PlanningEntity).filter_by(id=planningId).first()
+    db_planning = db.query(PlanningEntity).filter_by(id=planningId).first()
 
-    if db_company == None:
+    if db_planning == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="User not found")
-    db.delete(db_company)
+    if (authUser["role"] != "MAINTAINER" and authUser["company_id"] != db_planning.company_id):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
+    db.delete(db_planning)
     db.commit()
 
-    return old_company.__dict__
+    return old_planning.__dict__
 
 
 @router.patch("/planning/{planningId}")

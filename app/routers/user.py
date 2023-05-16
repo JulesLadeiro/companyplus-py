@@ -21,27 +21,29 @@ async def get_users(db: Session = Depends(get_db), authUser: Annotated[User, Dep
     Récupérer tout les utilisateurs
     """
     # Users with the role USER can't access this route
-    if (authUser["role"] != "ADMIN" and authUser["role"] != "MAINTAINER"):
+    if (authUser["role"] == "USER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    
+    show_all = True if authUser["role"] != "MAINTAINER" else True
+    
     db_users = db.query(UserEntity).all()
-
     db_users_dict = [user.__dict__ for user in db_users]
-    for user in db_users_dict:
-        user["first_name"] = decrypt(user["first_name"])
-        user["last_name"] = decrypt(user["last_name"])
-        user["email"] = decrypt(user["email"])
-        user["created_at"] = user["created_at"].strftime("%Y-%m-%d %H:%M:%S")
-        user["updated_at"] = user["updated_at"].strftime("%Y-%m-%d %H:%M:%S")
 
     admin_company_id = authUser["company_id"]
     # If the user is an ADMIN, we only return the users of his company
     if (authUser["role"] == "ADMIN"):
-        # If the user is not in a company, we return an empty list
         if (authUser["company_id"] == None):
             return []
         db_users_dict = list(
             filter(lambda user: user["company_id"] == admin_company_id, db_users_dict))
+        
+    for user in db_users_dict:
+        user["first_name"] = decrypt(user["first_name"])
+        user["last_name"] = decrypt(user["last_name"])
+        user["email"] = decrypt(user["email"]) if show_all else ""
+        user["created_at"] = datetime.datetime.timestamp(user["created_at"]) if show_all else 0
+        user["updated_at"] = datetime.datetime.timestamp(user["updated_at"]) if show_all else 0
 
     return db_users_dict
 

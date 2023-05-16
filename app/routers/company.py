@@ -75,10 +75,8 @@ async def get_companies(db: Session = Depends(get_db), authUser: Annotated[User,
             company_dict["city"]) if company_dict["city"] else None
         company_dict["country"] = decrypt(
             company_dict["country"]) if company_dict["country"] else None
-        company_dict["created_at"] = company_dict["created_at"].strftime(
-            "%Y-%m-%d %H:%M:%S")
-        company_dict["updated_at"] = company_dict["updated_at"].strftime(
-            "%Y-%m-%d %H:%M:%S")
+        company_dict["created_at"] = datetime.datetime.timestamp(company_dict["created_at"])
+        company_dict["updated_at"] = datetime.datetime.timestamp(company_dict["updated_at"])
         # add users
         user_list = company_dict["users"]
         company_dict["users"] = []
@@ -91,10 +89,8 @@ async def get_companies(db: Session = Depends(get_db), authUser: Annotated[User,
             user_dict["password"] = None
             user_dict["role"] = user_dict["role"]
             user_dict["company_id"] = user_dict["company_id"]
-            user_dict["created_at"] = user_dict["created_at"].strftime(
-                "%Y-%m-%d %H:%M:%S")
-            user_dict["updated_at"] = user_dict["updated_at"].strftime(
-                "%Y-%m-%d %H:%M:%S")
+            user_dict["created_at"] = datetime.datetime.timestamp(user_dict["created_at"])
+            user_dict["updated_at"] = datetime.datetime.timestamp(user_dict["updated_at"])
             company_dict["users"].append(user_dict)
         # add plannings
         planning_list = company_dict["plannings"]
@@ -104,10 +100,8 @@ async def get_companies(db: Session = Depends(get_db), authUser: Annotated[User,
             planning_dict["id"] = planning_dict["id"]
             planning_dict["name"] = decrypt(planning_dict["name"])
             planning_dict["company_id"] = planning_dict["company_id"]
-            planning_dict["created_at"] = planning_dict["created_at"].strftime(
-                "%Y-%m-%d %H:%M:%S")
-            planning_dict["updated_at"] = planning_dict["updated_at"].strftime(
-                "%Y-%m-%d %H:%M:%S")
+            planning_dict["created_at"] = datetime.datetime.timestamp(planning_dict["created_at"])
+            planning_dict["updated_at"] = datetime.datetime.timestamp(planning_dict["updated_at"])
             company_dict["plannings"].append(planning_dict)
         db_company_dict.append(company_dict)
 

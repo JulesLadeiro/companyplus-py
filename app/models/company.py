@@ -13,8 +13,8 @@ class Company(BaseModel):
     country: str
     users: list[User] = []
     plannings: list[Planning] = []
-    created_at: str = None
-    updated_at: str = None
+    created_at: int = None
+    updated_at: int = None
 
 
 class CompanyChangeableFields(BaseModel):

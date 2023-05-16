@@ -6,8 +6,8 @@ class Planning(BaseModel):
     id: int = None
     name: str
     company_id: int
-    created_at: str = None
-    updated_at: str = None
+    created_at: int = None
+    updated_at: int = None
 
 
 class PlanningChangeableFields(BaseModel):
