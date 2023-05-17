@@ -6,7 +6,7 @@ from fastapi import APIRouter, status, HTTPException
 from sqlalchemy.orm import Session
 from fastapi import Depends
 # Local Imports
-from entities import User as UserEntity
+from entities import User as UserEntity, UserEvent as UserEventEntity
 from models.user import User, UserChangeableFields
 from dependencies import get_db
 from internals.auth import decode_token
@@ -138,6 +138,11 @@ async def delete_user_by_id(userId: int, db: Session = Depends(get_db), authUser
     if db_user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="User not found")
+
+    events_users = db.query(UserEventEntity).filter_by(user_id=userId).all()
+    for event_user in events_users:
+        db.delete(event_user)
+
     db.delete(db_user)
     db.commit()
 
