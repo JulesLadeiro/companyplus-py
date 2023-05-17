@@ -1,7 +1,7 @@
 # Libs imports
 from pydantic import BaseModel
 # Local imports
-from models.user import User
+from models.user import PublicUser
 from models.planning import Planning
 
 
@@ -11,7 +11,7 @@ class Company(BaseModel):
     website: str = None
     city: str
     country: str
-    users: list[User] = []
+    users: list[PublicUser] = []
     plannings: list[Planning] = []
     created_at: int = None
     updated_at: int = None

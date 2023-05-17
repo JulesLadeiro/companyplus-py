@@ -3,7 +3,7 @@ import hashlib
 from typing import Annotated
 from dependencies import get_db
 # Libs Imports
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from models.user import User
@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 # Local Imports
 from entities import User as UserEntity
-from crypt import hash_password, encrypt, decrypt
+from crypt import hash_password, decrypt
 
 router = APIRouter()
 
@@ -29,7 +29,10 @@ async def decode_token(token: Annotated[str, Depends(oauth2_scheme)], db: Sessio
     try:
         decoded = jwt.decode(token, JWT_KEY, algorithms=["HS256"])
         user = db.query(UserEntity).filter_by(
-            id=decoded["id"]).first().__dict__
+            id=decoded["id"]).first()
+        if user == None:
+            raise credentials_exception
+        user = user.__dict__
         user["first_name"] = decrypt(user["first_name"])
         user["last_name"] = decrypt(user["last_name"])
         user["email"] = decrypt(user["email"])
@@ -45,7 +48,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     """
     Authentifie l'utilisateur via son email et son mot de passe
     """
-    hashed_password = hash_password(form_data.password)
+    hashedPassword = hash_password(form_data.password)
     users = [user.__dict__ for user in db.query(UserEntity).all()]
     userFound = False
     
@@ -57,9 +60,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     if userFound != False:
         userFound = UserEntity(
             id=userFound["id"],
-            password=userFound["password"]
+            password_hash=userFound["password_hash"]
         ).__dict__
-        if hashed_password == userFound["password"]:
+        if hashedPassword == userFound["password_hash"]:
             data = dict()
             data["id"] = userFound["id"]
             return {

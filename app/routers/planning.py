@@ -3,12 +3,12 @@ from typing import Annotated
 import datetime
 # Libs Imports
 from fastapi import APIRouter, status, HTTPException
-from sqlalchemy.orm import Session, contains_eager
+from sqlalchemy.orm import Session
 from fastapi import Depends
 # Local Imports
 from models.planning import Planning, PlanningChangeableFields
 from models.user import User
-from entities import Planning as PlanningEntity
+from entities import Planning as PlanningEntity, Event as EventEntity
 from dependencies import get_db
 from internals.auth import decode_token
 from crypt import encrypt, decrypt
@@ -16,13 +16,18 @@ from crypt import encrypt, decrypt
 router = APIRouter()
 
 
-@router.get("/planning")
-async def get_plannings(db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> list[Planning]:
+@router.get("/plannings")
+async def get_plannings(company_id=None, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> list[Planning]:
     """
-    Récupère tout les plannings de l'entreprise de l'utilisateur connecté
+    Récupère tout vos plannings.\n
+    Les maintainer peuvent filtrer par company_id.
     """
-    db_plannings = db.query(PlanningEntity).filter_by(
-        company_id=authUser["company_id"]).all()
+    company_id = authUser["company_id"] if authUser["role"] != "MAINTAINER" else company_id
+    if (company_id == None):
+        db_plannings = db.query(PlanningEntity).all()
+    else:
+        db_plannings = db.query(PlanningEntity).filter_by(
+            company_id=company_id).all()
     db_plannings_dict = [planning.__dict__ for planning in db_plannings]
 
     for planning in db_plannings_dict:
@@ -38,8 +43,8 @@ async def get_plannings(db: Session = Depends(get_db), authUser: Annotated[User,
 @router.post("/planning", status_code=status.HTTP_201_CREATED)
 async def create_planning(planning: PlanningChangeableFields, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> Planning:
     """
-    Créer un planning (ADMIN ou MAINTAINER)
-    Les MAINTEINER peuvent créer des plannings en ajoutant un company_id
+    Créer un planning (ADMIN ou MAINTAINER).\n
+    Les MAINTAINER peuvent créer des plannings en ajoutant un company_id.
     """
     company_id = None
     if ((authUser["role"] == "USER") or (authUser["company_id"] == None and authUser["role"] != "MAINTAINER")):
@@ -86,47 +91,62 @@ async def create_planning(planning: PlanningChangeableFields, db: Session = Depe
 @router.delete("/planning/{planningId}")
 async def delete_planning_by_id(planningId: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> Planning:
     """
-    Supprimer un planning via son id
+    Supprimer un planning via son id.\n
+    Rôle ADMIN ou MAINTAINER requis.
     """
     if (authUser["role"] == "USER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
-    old_planning = db.query(PlanningEntity).filter_by(id=planningId).first()
     db_planning = db.query(PlanningEntity).filter_by(id=planningId).first()
 
     if db_planning == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="User not found")
-    if (authUser["role"] != "MAINTAINER" and authUser["company_id"] != db_planning.company_id):
+                            detail="Planning not found")
+    elif (authUser["role"] != "MAINTAINER" and authUser["company_id"] != db_planning.company_id):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    
+    events = db.query(EventEntity).filter_by(planning_id=planningId).all()
+    for event in events:
+        db.delete(event)
 
     db.delete(db_planning)
     db.commit()
 
-    return old_planning.__dict__
+    old_db_planning = Planning(
+        id=db_planning.id,
+        name=decrypt(db_planning.name),
+        company_id=db_planning.company_id,
+        created_at=datetime.datetime.timestamp(db_planning.created_at),
+        updated_at=datetime.datetime.timestamp(db_planning.updated_at)
+    )
+
+    return old_db_planning.__dict__
 
 
 @router.patch("/planning/{planningId}")
 async def update_planning_by_id(planningId: int, planning: PlanningChangeableFields, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> Planning:
     """
-    Mettre à jour une entreprise via son id
-    Rôle MAINTAINER requis
+    Mettre à jour une entreprise via son id.\n
+    Rôle ADMIN ou MAINTAINER requis.
     """
-    if (authUser["role"] != "MAINTAINER"):
+    if (authUser["role"] == "USER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
     db_planning = db.query(PlanningEntity).filter_by(id=planningId).first()
 
-    if db_planning == None:
+    if (db_planning == None):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="User not found")
+    elif (authUser["role"] != "MAINTAINER" and authUser["company_id"] != db_planning.company_id):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
     db_planning.name = encrypt(
         planning.name) if planning.name else db_planning.name
-    db_planning.updated_at = datetime.now()
+    db_planning.updated_at = datetime.datetime.now()
     db.commit()
     db.refresh(db_planning)
 
@@ -134,8 +154,8 @@ async def update_planning_by_id(planningId: int, planning: PlanningChangeableFie
         id=db_planning.id,
         name=decrypt(db_planning.name),
         company_id=db_planning.company_id,
-        created_at=db_planning.created_at,
-        updated_at=db_planning.updated_at
+        created_at=datetime.datetime.timestamp(db_planning.created_at),
+        updated_at=datetime.datetime.timestamp(db_planning.updated_at)
     )
 
     return db_company_decrypted

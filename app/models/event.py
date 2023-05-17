@@ -19,7 +19,7 @@ class Event(BaseModel):
     place: str
     start_date: int
     end_date: int
-    planning_id: int
+    planning_id: int = None
     users: list[UserEventInfo] = []
     owner_id: int
     company_id: int = None

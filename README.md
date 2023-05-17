@@ -69,7 +69,7 @@ Please refer to the following table to understand the meaning of the characters 
 
 #### Users table
 
-| id  | first_name! | last_name! | email!         | password#  | role       | company_id |
+| id  | first_name! | last_name! | email!         | password_hash#  | role       | company_id |
 | --- | ----------- | ---------- | -------------- | ---------- | ---------- | ---------- |
 | 1   | *           | *          | admin@cp.cp    | admin      | MAINTAINER | 1          |
 | 2   | *           | *          | jules@ju.ju    | azerty     | ADMIN      | 1          |
@@ -118,8 +118,8 @@ Please refer to the following table to understand the meaning of the characters 
 - [x] README.md clair et bien documenté (sachant qu'un README ne me permettant pas d'exécuter le code entrainera une réduction de la note globale de 33%) (5 points)
 - [x] Organisation des fichiers et dossiers (5 points)
 - [x] Utilisation appropriée des modules et packages (5 points)
-- [ ] Lisibilité et propreté du code (10 points)
-- [ ] Commentaires lisibles et faisant sens (5 points)
+- [x] Lisibilité et propreté du code (10 points)
+- [x] Commentaires lisibles et faisant sens (5 points)
 - [x] Bonne utilisation du git (commits de bonne taille, messages faisant sens) (5 points)
 
 ### 2. Implémentation des standards appris en cours (35 points)
@@ -142,5 +142,5 @@ Please refer to the following table to understand the meaning of the characters 
 
 - [x] Utilisation de tokens pour l'authentification (JWT) (5 points)
 - [x] Validation et vérification des données entrantes avec modèles pydantics, not (5 points)
-- [ ] Gestion des erreurs et exceptions (5 points)
+- [x] Gestion des erreurs et exceptions (5 points)
 - [x] Sécurisation de la connexion à la base de données (5 points)
