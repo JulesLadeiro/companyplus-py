@@ -59,7 +59,6 @@ class Event(Base):
     place = Column(String)
     start_date = Column(DateTime, default=datetime.datetime.utcnow)
     end_date = Column(DateTime, default=datetime.datetime.utcnow)
-    members_nb = Column(Integer)
     planning_id = Column(Integer, ForeignKey("plannings.id"))
     owner_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)

@@ -4,13 +4,13 @@ from pydantic import BaseModel
 
 class UserEventInfo(BaseModel):
     id: int
-    first_name: str
-    last_name: str
-    email: str
+    first_name: str = None
+    last_name: str = None
+    email: str = None
     role: str
-    accepted = bool
-    added_at = int
-    accepted_at = int
+    accepted: bool = None
+    added_at: int = None
+    accepted_at: int = None
 
 
 class Event(BaseModel):
@@ -20,7 +20,6 @@ class Event(BaseModel):
     start_date: int
     end_date: int
     planning_id: int
-    members_nb: int
     users: list[UserEventInfo] = []
     owner_id: int
     company_id: int = None
@@ -34,11 +33,6 @@ class EventChangeableFields(BaseModel):
     start_date: int = None
     end_date: int = None
     planning_id: int = None
-
-
-class InviteToEvent(BaseModel):
-    userId: int = None
-    eventId: int
 
 
 class DefaultResponse(BaseModel):

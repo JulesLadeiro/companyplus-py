@@ -21,20 +21,20 @@ async def get_users(db: Session = Depends(get_db), authUser: Annotated[User, Dep
     Récupérer tout les utilisateurs
     """
     # Users with the role USER can't access this route
-    if (authUser["role"] == "USER"):
+    if (authUser and authUser["role"] == "USER"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     
-    show_all = True if authUser["role"] != "MAINTAINER" else True
+    show_all = True if authUser and authUser["role"] != "MAINTAINER" else True
     
     db_users = db.query(UserEntity).all()
     db_users_dict = [user.__dict__ for user in db_users]
 
-    admin_company_id = authUser["company_id"]
     # If the user is an ADMIN, we only return the users of his company
-    if (authUser["role"] == "ADMIN"):
+    if (authUser and authUser["role"] == "ADMIN"):
         if (authUser["company_id"] == None):
             return []
+        admin_company_id = authUser["company_id"]
         db_users_dict = list(
             filter(lambda user: user["company_id"] == admin_company_id, db_users_dict))
         

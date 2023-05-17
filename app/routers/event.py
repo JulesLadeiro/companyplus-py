@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 # Local Imports
 from entities import Event as EventEntity, UserEvent as UserEventEntity, User as UserEntity, Planning as PlanningEntity, Company as CompanyEntity
-from models.event import Event, EventChangeableFields, InviteToEvent, DefaultResponse
+from models.event import Event, EventChangeableFields, DefaultResponse
 from models.user import User
 from routers.user import get_user_by_id, get_users
 from dependencies import get_db
@@ -39,7 +39,7 @@ async def get_event(wantedCompanyId: int = None, db: Session = Depends(get_db), 
         db_events = db.query(EventEntity).outerjoin(PlanningEntity).filter_by(
             company_id=company_id).all()
 
-    users = await get_users(db, authUser)
+    users = await get_users(db)
 
     db_events_dict = [event.__dict__ for event in db_events]
     for event in db_events_dict:
@@ -105,8 +105,7 @@ async def create_event(event: EventChangeableFields, db: Session = Depends(get_d
         start_date=startDate,
         end_date=endDate,
         planning_id=planning.id,
-        owner_id=authUser["id"],
-        members_nb=1
+        owner_id=authUser["id"]
     )
     db.add(db_event)
     db.commit()
@@ -135,7 +134,6 @@ async def create_event(event: EventChangeableFields, db: Session = Depends(get_d
         end_date=datetime.datetime.timestamp(db_event.end_date),
         planning_id=db_event.planning_id,
         owner_id=db_event.owner_id,
-        members_nb=db_event.members_nb,
         users=[user],
         created_at=datetime.datetime.timestamp(db_event.created_at),
         updated_at=datetime.datetime.timestamp(db_event.updated_at)
@@ -212,21 +210,16 @@ async def update_event_by_id(eventId: int, event: EventChangeableFields, db: Ses
     return db_user_decrypted
 
 
-@router.post("/event-add-user")
-async def add_user_to_event(info: InviteToEvent, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> DefaultResponse:
+@router.get("/event-add-user/{eventId}")
+async def add_user_to_event(eventId: int, userId: int = None, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> DefaultResponse:
     """
     Ajouter un utilisateur à une activité,
     userId non requis si vous souhaitez vous ajouter vous-même.
     """
-    userId = info.userId if info.userId else authUser["id"]
-    companyId = authUser["company_id"] if authUser["role"] != "MAINTAINER" else info.companyId
-
-    if not companyId:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Company not found")
+    userId = userId if userId else authUser["id"]
 
     db_user = db.query(UserEntity).filter_by(id=userId).first()
-    db_event: Event = db.query(EventEntity).filter_by(id=info.eventId).first()
+    db_event: Event = db.query(EventEntity).filter_by(id=eventId).first()
 
     if db_user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -239,7 +232,7 @@ async def add_user_to_event(info: InviteToEvent, db: Session = Depends(get_db), 
                             detail="Event not found")
 
     db_users_in_event = db.query(UserEventEntity).filter_by(
-        event_id=info.eventId).all()
+        event_id=eventId).all()
     userIsAlreadyInEvent = False
     for userEvent in db_users_in_event:
         if userEvent.user_id == db_user.id:
@@ -256,7 +249,7 @@ async def add_user_to_event(info: InviteToEvent, db: Session = Depends(get_db), 
     if db_planning == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="The event is not in a planning")
-    elif db_planning.company_id != companyId and authUser["role"] != "MAINTAINER":
+    elif db_planning.company_id != authUser["company_id"] and authUser["role"] != "MAINTAINER":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Unauthorized")
 
@@ -276,21 +269,16 @@ async def add_user_to_event(info: InviteToEvent, db: Session = Depends(get_db), 
     return {"success": True}
 
 
-@router.post("/event-remove-user/{eventId}")
-async def remove_user_from_event(info: InviteToEvent, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> DefaultResponse:
+@router.get("/event-remove-user/{eventId}")
+async def remove_user_from_event(eventId: int, userId: int = None, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> DefaultResponse:
     """
     Supprimer un utilisateur d'une activité,
     userId non requis si vous souhaitez vous supprimer vous-même.
     """
-    userId = info.userId if info.userId else authUser["id"]
-    companyId = authUser["company_id"] if authUser["role"] != "MAINTAINER" else info.companyId
-
-    if not companyId:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Company not found")
+    userId = userId if userId else authUser["id"]
 
     db_user = db.query(UserEntity).filter_by(id=userId).first()
-    db_event: Event = db.query(EventEntity).filter_by(id=info.eventId).first()
+    db_event: Event = db.query(EventEntity).filter_by(id=eventId).first()
 
     if db_user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -303,7 +291,7 @@ async def remove_user_from_event(info: InviteToEvent, db: Session = Depends(get_
                             detail="Event not found")
 
     db_users_in_event = db.query(UserEventEntity).filter_by(
-        event_id=info.eventId).all()
+        event_id=eventId).all()
     userIsAlreadyInEvent = False
     for userEvent in db_users_in_event:
         if userEvent.user_id == db_user.id:
@@ -320,12 +308,42 @@ async def remove_user_from_event(info: InviteToEvent, db: Session = Depends(get_
     if db_planning == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="The event is not in a planning")
-    elif db_planning.company_id != companyId and authUser["role"] != "MAINTAINER":
+    elif db_planning.company_id != authUser["company_id"] and authUser["role"] != "MAINTAINER":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Unauthorized")
 
     db.query(UserEventEntity).filter_by(
         user_id=db_user.id, event_id=db_event.id).delete()
+    db.commit()
+
+    return {"success": True}
+
+
+@router.get("/event-accept-invite/{eventId}")
+async def accept_invite(eventId: int, db: Session = Depends(get_db), authUser: Annotated[User, Depends(decode_token)] = None) -> DefaultResponse:
+    """
+    Accepter une invitation à une activité
+    """
+    db_event: Event = db.query(EventEntity).filter_by(id=eventId).first()
+
+    if db_event == None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Event not found")
+
+    db_users_in_event = db.query(UserEventEntity).filter_by(
+        event_id=eventId).all()
+    userAlreadyAcceptedEvent = False
+    for userEvent in db_users_in_event:
+        if userEvent.user_id == authUser["id"] and userEvent.accepted == True:
+            userAlreadyAcceptedEvent = True
+            break
+
+    if userAlreadyAcceptedEvent:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="You've already accepted the event")
+
+    db.query(UserEventEntity).filter_by(
+        user_id=authUser["id"], event_id=db_event.id).update({UserEventEntity.accepted: True})
     db.commit()
 
     return {"success": True}

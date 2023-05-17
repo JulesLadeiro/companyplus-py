@@ -98,13 +98,13 @@ Please refer to the following table to understand the meaning of the characters 
 
 #### Events table
 
-| id  | name!                       | place!      | start_date | end_date | planning_id | members_nb | owner_id | invited_at | updated_at |
-| --- | --------------------------- | ----------- | ---------- | -------- | ----------- | ---------- | -------- | ---------- | ---------- |
-| 1   | endpoints events            | teleworking | *          | *        | 1           | *          | 2        | *          | *          |
-| 2   | endpoints notifications     | efficom     | *          | *        | 1           | *          | 3        | *          | *          |
-| 3   | ux ui meet                  | teleworking | *          | *        | 2           | *          | 1        | *          | *          |
-| 4   | price discussion            | teleworking | *          | *        | 3           | *          | 5        | *          | *          |
-| 5   | twitter plus public release | teleworking | *          | *        | 4           | *          | 7        | *          | *          |
+| id  | name!                       | place!      | start_date | end_date | planning_id | owner_id | invited_at | updated_at |
+| --- | --------------------------- | ----------- | ---------- | -------- | ----------- | -------- | ---------- | ---------- |
+| 1   | endpoints events            | teleworking | *          | *        | 1           | 2        | *          | *          |
+| 2   | endpoints notifications     | efficom     | *          | *        | 1           | 3        | *          | *          |
+| 3   | ux ui meet                  | teleworking | *          | *        | 2           | 1        | *          | *          |
+| 4   | price discussion            | teleworking | *          | *        | 3           | 5        | *          | *          |
+| 5   | twitter plus public release | teleworking | *          | *        | 4           | 7        | *          | *          |
 
 #### Notifications table
 
@@ -135,7 +135,7 @@ Please refer to the following table to understand the meaning of the characters 
 - [x] Connexion à la base de données (30 points)
 - [x] Gestion des utilisateurs (15 points)
 - [x] Gestion des plannings (15 points)
-- [ ] Gestion des activités (15 points)
+- [x] Gestion des activités (15 points)
 - [x] Gestion des entreprises (10 points)
 
 ### 4. Sécurité (20 points)
